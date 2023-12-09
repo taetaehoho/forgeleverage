@@ -66,5 +66,13 @@ export async function swapUSDCForETHWIthFusion(nodeUrl: string, _fromTokenAddres
 
     const wethContract = new ethers.Contract(wethAddress, WETHabi, wallet);
 
+    const wethBalance = await wethContract.balanceOf(wallet.address); 
+    
+    // assume that the fusion order filled in 10 seconds... 
 
+    const wethTx = await wethContract.withdraw(wethBalance); 
+
+    await wethTx.wait(6); // wait 6 blocks confirmation
+
+    return wethBalance;
 }
