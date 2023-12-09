@@ -40,7 +40,28 @@ if (process.env.NETWORK == "421613") {
     usdcAddress = CONFIG.arbitrum.usdcAddress!;
     wethAddress = CONFIG.arbitrum.WETHAddress!;
     oneinchrouter = CONFIG.arbitrum.oneinchrouter!;
+} else if (process.env.NETWORK == "137") { // polygon mainnet
+    RPC_URL = process.env.POLYGON_RPC_URL!;
+    usdcAddress = CONFIG.polygon.usdcAddress;
+    wethAddress = CONFIG.polygon.WETHAddress!;
+    oneinchrouter = CONFIG.polygon.WrappedTokenGatewayV3!;
+} else if (process.env.NETWORK == "8453") { // base
+    RPC_URL = process.env.BASE_RPC_URL!;
+    usdcAddress = CONFIG.base.usdcAddress;
+    wethAddress = CONFIG.base.WETHAddress!;
+} else if (process.env.NETWORK == "42220") { // celo
+    RPC_URL = process.env.CELO_RPC_URL!;
+    usdcAddress = CONFIG.celo.usdcAddress;
+    wethAddress = CONFIG.celo.WETHAddress!;
 }
+// 3. Set up Message Handlers
+// bot.on('message', (msg) => {
+//     const chatId = msg.chat.id;
+
+//     // Echo the message text back
+//     bot.sendMessage(chatId, `Echo: ${msg.text}`);
+// });
+
 
 // 4. Define Custom Commands (e.g., /start)
 bot.onText(/\/start/, (msg) => {
@@ -86,14 +107,14 @@ bot.onText(/\/open_position/, async function onOpenPosition(msg) {
         const aaveUSDC = Math.round(Number(ethers.formatEther(ethAmount)) * 1500 * currentRecursiveLeverageRatio * 1e6)
         const usdcAave = await borrowUSDCWithETHOnAAVE(ethAmount, aaveUSDC)
 
-        await bot.sendMessage(msg.chat.id, `Successfully borrowed ${usdcAave} USDC for ETH on Aave...`);
+        await bot.sendMessage(msg.chat.id, `Successfully borrowed ${ethers.formatUnits(usdcAave, 6)} USDC for ETH on Aave...`);
 
         totalLevrageRatio += currentRecursiveLeverageRatio
         console.log(totalLevrageRatio)
         await bot.sendMessage(msg.chat.id, 'Your currenct leverage ratio is: ' + totalLevrageRatio.toFixed(2) + 'x');
     }
 
-    bot.sendMessage(msg.chat.id, 'Finish opening limited position');
+    bot.sendMessage(msg.chat.id, 'Finished opening position');
 });
 
 bot.onText(/\/uniswap_open_position/, async function onOpenPosition(msg) {
@@ -142,7 +163,7 @@ bot.onText(/\/uniswap_open_position/, async function onOpenPosition(msg) {
 
         totalLevrageRatio += currentRecursiveLeverageRatio
         console.log(totalLevrageRatio)
-        await bot.sendMessage(msg.chat.id, 'Your current leverage ratio is: ' + totalLevrageRatio.toFixed(2) + 'x');
+        await bot.sendMessage(msg.chat.id, 'Your currenct leverage ratio is: ' + totalLevrageRatio.toFixed(2) + 'x');
     }
 
     bot.sendMessage(msg.chat.id, 'Finish opening limited position');

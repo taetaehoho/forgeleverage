@@ -17,26 +17,46 @@ export async function borrowUSDCWithETHOnAAVE(ethAmount: bigint, usdcAmount: num
     let poolAddress: string = "";
     let wrappedTokenAddress: string = "";
 
-    if (process.env.NETWORK == "421613") {
+    if (process.env.NETWORK == "421613") { // arbygoerli
         RPC_URL = process.env.ARBYGOERLI_URL;
         usdcAddress = CONFIG.arbigoerli.usdcAddress!;
         poolAddress = CONFIG.arbigoerli.PoolProxy!;
         wrappedTokenAddress = CONFIG.arbigoerli.WrappedTokenGatewayV3!;
-    } else if (process.env.NETWORK == "534351") {
+    } else if (process.env.NETWORK == "534351") { // scroll testnet
         RPC_URL = process.env.SCROLLTESTNET_URL;
         usdcAddress = CONFIG.scrolltestnet.usdcAddress;
         poolAddress = CONFIG.scrolltestnet.PoolProxy!;
         wrappedTokenAddress = CONFIG.scrolltestnet.WrappedTokenGatewayV3!;
-    } else if (process.env.NETWORK == "80001") {
+    } else if (process.env.NETWORK == "80001") { // mumbai
         RPC_URL = process.env.MUMBAI_URL;
         usdcAddress = CONFIG.mumbai.usdcAddress!;
         poolAddress = CONFIG.mumbai.PoolProxy!;
         wrappedTokenAddress = CONFIG.mumbai.WrappedTokenGatewayV3!;
-    } else if (process.env.NETWORK == "42161") {
+    } else if (process.env.NETWORK == "42161") { // arby mainnet
         RPC_URL = process.env.ARBITRUM_URL!;
         usdcAddress = CONFIG.arbitrum.usdcAddress!;
         poolAddress = CONFIG.arbitrum.PoolProxy!;
         wrappedTokenAddress = CONFIG.arbitrum.WrappedTokenGatewayV3!;
+     } else if (process.env.NETWORK == "534351") { // scrolltestnet
+        RPC_URL = process.env.SCROLLTESTNET_URL;
+        usdcAddress = CONFIG.scrolltestnet.usdcAddress;
+        poolAddress = CONFIG.scrolltestnet.PoolProxy!;
+        wrappedTokenAddress = CONFIG.scrolltestnet.WrappedTokenGatewayV3!;
+    } else if (process.env.NETWORK == "137") { // polygon mainnet
+        RPC_URL = process.env.POLYGON_RPC_URL;
+        usdcAddress = CONFIG.polygon.usdcAddress;
+        poolAddress = CONFIG.polygon.PoolProxy!;
+        wrappedTokenAddress = CONFIG.polygon.WrappedTokenGatewayV3!;
+    } else if (process.env.NETWORK == "8453") { // base
+        RPC_URL = process.env.BASE_RPC_URL;
+        usdcAddress = CONFIG.base.usdcAddress;
+        poolAddress = CONFIG.base.PoolProxy!;
+        wrappedTokenAddress = CONFIG.base.WrappedTokenGatewayV3!;
+    } else if (process.env.NETWORK == "42220") { // celo
+        RPC_URL = process.env.CELO_RPC_URL!;
+        usdcAddress = CONFIG.celo.usdcAddress;
+        poolAddress = CONFIG.celo.PoolProxy!;
+        wrappedTokenAddress = CONFIG.celo.WrappedTokenGatewayV3!;
     }
 
     const provider = new ethers.JsonRpcProvider(RPC_URL);
