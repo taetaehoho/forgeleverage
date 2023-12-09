@@ -39,4 +39,25 @@ export async function swapUSDCForETHWIthFusion(nodeUrl: string, _fromTokenAddres
         oneinchrouter = CONFIG.arbitrum.oneinchrouter!;
     }
 
+    const provider = new ethers.JsonRpcProvider(RPC_URL);
+    const privateKey = process.env.PRIVATE_KEY!;
+    const wallet = new ethers.Wallet(privateKey, provider);
+
+    const blockchainProvider = new PrivateKeyProviderConnector(
+        makerPrivateKey,
+        new Web3(nodeUrl))
+
+    const sdk = new FusionSDK({
+        url: 'https://fusion.1inch.io',
+        network: NetworkEnum.ARBITRUM,
+        blockchainProvider
+    })
+
+    const tx = await sdk.placeOrder({
+        fromTokenAddress: _fromTokenAddress,
+        toTokenAddress: _toTokenAddress,
+        amount: _amount,
+        walletAddress: makerAddress,
+    })
+
 }
