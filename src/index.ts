@@ -58,7 +58,7 @@ bot.onText(/\/open_position/, async function onOpenPosition(msg) {
     bot.sendMessage(msg.chat.id, 'Opening position...');
     let _usdcAmount = Number(usdcAmount) * 1e6 // convert to 6decimals
     let _recursiveTime = Number(recursiveTime)
-    let _leverageRatio = Number(debtRatio)
+    let _debtRatio = Number(debtRatio)
     let currentRecursiveLeverageRatio = 0
     let totalLevrageRatio = 1
     // run fusion to convert usd to eth
@@ -68,9 +68,33 @@ bot.onText(/\/open_position/, async function onOpenPosition(msg) {
     console.log(ethers.formatUnits(usdcBalance, 6))
     await approveUSDC(usdcBalance, _usdcAmount)
 
-    // TO DO
-    // 1. LOOP Over num recursion times 
-    // 2. each time sell USDC using fusion 
-    // 3. then borrow the debt amount on aave 
-    // 4. log the total leverage ratio and report that to the end user
+    for (let i = 0; i < _recursiveTime; i++) {
+        await bot.sendMessage(msg.chat.id, 'Swapping USDC for ETH with 1inch Fusion... \nPlease wait while your limit order is being filled');
+        console.log(_usdcAmount.toString(), usdcBalance)
+        try {
+            const ethAmount = await swapUSDCForETHWIthFusion(RPC_URL, usdcAddress, wethAddress, _usdcAmount.toString(), usdcBalance) 
+            await bot.sendMessage(msg.chat.id, `Successsfully swapped ${ethers.formatUnits(_usdcAmount, 6)} USDC for ${ethers.formatEther(ethAmount)} ETH...`);
+
+            await bot.sendMessage(msg.chat.id, 'Now borrowing USDC for ETH on Aave...');
+    
+            currentRecursiveLeverageRatio = Math.pow(_debtRatio, i + 1)
+    
+            // manual but okay
+            const aaveUSDC = Number(ethers.formatEther(ethAmount)) * 2200 * currentRecursiveLeverageRatio * 1e6
+            const usdcAave = await borrowUSDCWithETHOnAAVE(ethers.parseEther(ethAmount), aaveUSDC)
+    
+            await bot.sendMessage(msg.chat.id, `Successfully borrowed ${usdcAave} USDC for ETH on Aave...`);
+    
+            totalLevrageRatio += currentRecursiveLeverageRatio
+            console.log(totalLevrageRatio)
+            await bot.sendMessage(msg.chat.id, 'Your currenct leverage ratio is: ' + totalLevrageRatio.toFixed(2) + 'x');
+        } catch (error:any) {
+            if (error['response']['status'] == 400) {
+                console.log("Bad request")
+                bot.sendMessage(msg.chat.id, error['response']['data']['message'])
+            }
+        }
+    }
+    bot.sendMessage(msg.chat.id, 'Finished opening limited position');
+
 });
