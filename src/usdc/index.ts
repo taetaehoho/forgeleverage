@@ -42,10 +42,18 @@ export async function approveUSDC(usdcBalance:number, usdcAmount:number) {
 
     const USDCMAX = 10000 * 1e6;
 
-    // approve say 50000usdc if approvals not met
-    if (await usdcContract.balanceOf(wallet.address) < usdcAmount) {
-        await usdcContract.approve(oneinchrouter, USDCMAX)
+    if (usdcBalance < usdcAmount) {
+        return Error("Insufficient USDC in address.")
     }
+
+    let allowance = await usdcContract.allowance(wallet.address, oneinchrouter);
+    // approve say 50000usdc if approvals not met
+    if (allowance < usdcAmount) {
+        const usdcApproval = await  usdcContract.approve(oneinchrouter, USDCMAX)
+        await usdcApproval.wait(6)
+        allowance = await usdcContract.allowance(wallet.address, oneinchrouter);
+    }
+    console.log('Allowance:', ethers.formatUnits(allowance, 6), 'USDC', '\nNo need for further approvals');
 }
 
 export async function getUsdcBalance() {
