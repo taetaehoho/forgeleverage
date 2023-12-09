@@ -60,4 +60,11 @@ export async function swapUSDCForETHWIthFusion(nodeUrl: string, _fromTokenAddres
         walletAddress: makerAddress,
     })
 
+    console.log("Placed Fusion Limit Order... Waiting to fill")
+
+    await sleep(10000); // wait 10 seconds for fusion order to fill
+
+    const wethContract = new ethers.Contract(wethAddress, WETHabi, wallet);
+
+
 }
