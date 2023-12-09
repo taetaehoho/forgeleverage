@@ -1,6 +1,10 @@
 Fully Available on Arbitrum, Polygon
 
-Overlapping protocols where Fusion-AaveV3
+Overlapping protocols with Univ3-AaveV3
+
+- Base
+
+Overlapping protocols with Fusion-AaveV3
 
 - Arbitrum, Polygon
 

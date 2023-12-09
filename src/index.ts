@@ -142,7 +142,7 @@ bot.onText(/\/uniswap_open_position/, async function onOpenPosition(msg) {
 
         totalLevrageRatio += currentRecursiveLeverageRatio
         console.log(totalLevrageRatio)
-        await bot.sendMessage(msg.chat.id, 'Your currenct leverage ratio is: ' + totalLevrageRatio.toFixed(2) + 'x');
+        await bot.sendMessage(msg.chat.id, 'Your current leverage ratio is: ' + totalLevrageRatio.toFixed(2) + 'x');
     }
 
     bot.sendMessage(msg.chat.id, 'Finish opening limited position');

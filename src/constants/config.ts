@@ -35,6 +35,11 @@ export const CONFIG = {
         usdcAddress: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
         WETHAddress: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
         oneinchrouter: "0x1111111254EEB25477B68fb85Ed929f73A960582",
+    }, base: {
+        WrappedTokenGatewayV3: "0x18CD499E3d7ed42FEbA981ac9236A278E4Cdc2ee",
+        PoolProxy: "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5",
+        usdcAddress: "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA",
+        WETHAddress: "0x4200000000000000000000000000000000000006"
     }
 }
 
