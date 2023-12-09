@@ -41,14 +41,6 @@ if (process.env.NETWORK == "421613") {
     wethAddress = CONFIG.arbitrum.WETHAddress!;
     oneinchrouter = CONFIG.arbitrum.oneinchrouter!;
 }
-// 3. Set up Message Handlers
-// bot.on('message', (msg) => {
-//     const chatId = msg.chat.id;
-
-//     // Echo the message text back
-//     bot.sendMessage(chatId, `Echo: ${msg.text}`);
-// });
-
 
 // 4. Define Custom Commands (e.g., /start)
 bot.onText(/\/start/, (msg) => {
