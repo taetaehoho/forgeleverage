@@ -5,6 +5,7 @@ import { swapUSDCForETHWIthFusion } from './fusion';
 import { borrowUSDCWithETHOnAAVE } from './aave';
 import { CONFIG } from "./constants/config";
 import { ethers } from 'ethers';
+import { approveUSDC, getUsdcBalance } from './usdc';
 
 
 config();
@@ -41,8 +42,35 @@ if (process.env.NETWORK == "421613") {
 
 // 4. Define Custom Commands (e.g., /start)
 bot.onText(/\/start/, (msg) => {
-    bot.sendMessage(msg.chat.id, "Welcome to the bot!");
+    bot.sendMessage(msg.chat.id, "Welcome to the FusionLeverage_Bot\nHere are the available Commands:\n1.OpenPosition [usdcAmount] [NumTimesLevered] [DebtRatio]");
 });
 
 bot.onText(/\/open_position/, async function onOpenPosition(msg) {
+    const params = msg.text?.split(' ')
+    let usdcAmount = params?.[1]
+    let recursiveTime = params?.[2]
+    let debtRatio = params?.[3]
+    if (!usdcAmount || !recursiveTime || !debtRatio) {
+        bot.sendMessage(msg.chat.id, "Please enter the correct params [usdcAmount] [NumTimesLevered] [DebtRatio]");
+        return
+    }
+
+    bot.sendMessage(msg.chat.id, 'Opening position...');
+    let _usdcAmount = Number(usdcAmount) * 1e6 // convert to 6decimals
+    let _recursiveTime = Number(recursiveTime)
+    let _leverageRatio = Number(debtRatio)
+    let currentRecursiveLeverageRatio = 0
+    let totalLevrageRatio = 1
+    // run fusion to convert usd to eth
+    await bot.sendMessage(msg.chat.id, 'Approving Fusion to sell your USDC...');
+
+    const usdcBalance = await getUsdcBalance();
+    console.log(ethers.formatUnits(usdcBalance, 6))
+    await approveUSDC(usdcBalance, _usdcAmount)
+
+    // TO DO
+    // 1. LOOP Over num recursion times 
+    // 2. each time sell USDC using fusion 
+    // 3. then borrow the debt amount on aave 
+    // 4. log the total leverage ratio and report that to the end user
 });
