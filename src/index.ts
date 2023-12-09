@@ -2,10 +2,12 @@
 import TelegramBot from 'node-telegram-bot-api';
 import { config } from 'dotenv';
 import { swapUSDCForETHWIthFusion } from './fusion';
+import { approveUSDC, getUsdcBalance } from './usdc';
 import { borrowUSDCWithETHOnAAVE } from './aave';
 import { CONFIG } from "./constants/config";
 import { ethers } from 'ethers';
-import { approveUSDC, getUsdcBalance } from './usdc';
+import { tradeUSDCForETH } from './uniswap';
+import { sleep } from "./constants/sleep";
 
 
 config();
@@ -39,62 +41,118 @@ if (process.env.NETWORK == "421613") {
     wethAddress = CONFIG.arbitrum.WETHAddress!;
     oneinchrouter = CONFIG.arbitrum.oneinchrouter!;
 }
+// 3. Set up Message Handlers
+// bot.on('message', (msg) => {
+//     const chatId = msg.chat.id;
+
+//     // Echo the message text back
+//     bot.sendMessage(chatId, `Echo: ${msg.text}`);
+// });
+
 
 // 4. Define Custom Commands (e.g., /start)
 bot.onText(/\/start/, (msg) => {
-    bot.sendMessage(msg.chat.id, "Welcome to the FusionLeverage_Bot\nHere are the available Commands:\n1.OpenPosition [usdcAmount] [NumTimesLevered] [DebtRatio]");
+    bot.sendMessage(msg.chat.id, "Welcome to the bot!");
 });
 
 bot.onText(/\/open_position/, async function onOpenPosition(msg) {
     const params = msg.text?.split(' ')
     let usdcAmount = params?.[1]
     let recursiveTime = params?.[2]
-    let debtRatio = params?.[3]
-    if (!usdcAmount || !recursiveTime || !debtRatio) {
-        bot.sendMessage(msg.chat.id, "Please enter the correct params [usdcAmount] [NumTimesLevered] [DebtRatio]");
+    let leverageRatio = params?.[3]
+    if (!usdcAmount || !recursiveTime || !leverageRatio) {
+        bot.sendMessage(msg.chat.id, "Please enter the correct params {usdcamount} {recursiveTimes} {leverageRatio}");
         return
     }
-
     bot.sendMessage(msg.chat.id, 'Opening position...');
     let _usdcAmount = Number(usdcAmount) * 1e6 // convert to 6decimals
     let _recursiveTime = Number(recursiveTime)
-    let _debtRatio = Number(debtRatio)
+    let _leverageRatio = Number(leverageRatio)
     let currentRecursiveLeverageRatio = 0
     let totalLevrageRatio = 1
     // run fusion to convert usd to eth
-    await bot.sendMessage(msg.chat.id, 'Approving Fusion to sell your USDC...');
+    await bot.sendMessage(msg.chat.id, 'Approving USDC for Selling with Fusion...');
 
+    //need conversion for decimal
     const usdcBalance = await getUsdcBalance();
     console.log(ethers.formatUnits(usdcBalance, 6))
     await approveUSDC(usdcBalance, _usdcAmount)
-
     for (let i = 0; i < _recursiveTime; i++) {
+
         await bot.sendMessage(msg.chat.id, 'Swapping USDC for ETH with 1inch Fusion... \nPlease wait while your limit order is being filled');
         console.log(_usdcAmount.toString(), usdcBalance)
-        try {
-            const ethAmount = await swapUSDCForETHWIthFusion(RPC_URL, usdcAddress, wethAddress, _usdcAmount.toString(), usdcBalance) 
-            await bot.sendMessage(msg.chat.id, `Successsfully swapped ${ethers.formatUnits(_usdcAmount, 6)} USDC for ${ethers.formatEther(ethAmount)} ETH...`);
+        const ethAmount = await swapUSDCForETHWIthFusion(RPC_URL, usdcAddress, wethAddress, _usdcAmount.toString(), usdcBalance)
+        await bot.sendMessage(msg.chat.id, `Successsfully swapped ${ethers.formatUnits(_usdcAmount, 6)} USDC for ${ethers.formatEther(ethAmount)} ETH...`);
 
-            await bot.sendMessage(msg.chat.id, 'Now borrowing USDC for ETH on Aave...');
-    
-            currentRecursiveLeverageRatio = Math.pow(_debtRatio, i + 1)
-    
-            // manual but okay
-            const aaveUSDC = Number(ethers.formatEther(ethAmount)) * 2200 * currentRecursiveLeverageRatio * 1e6
-            const usdcAave = await borrowUSDCWithETHOnAAVE(ethers.parseEther(ethAmount), aaveUSDC)
-    
-            await bot.sendMessage(msg.chat.id, `Successfully borrowed ${usdcAave} USDC for ETH on Aave...`);
-    
-            totalLevrageRatio += currentRecursiveLeverageRatio
-            console.log(totalLevrageRatio)
-            await bot.sendMessage(msg.chat.id, 'Your currenct leverage ratio is: ' + totalLevrageRatio.toFixed(2) + 'x');
-        } catch (error:any) {
-            if (error['response']['status'] == 400) {
-                console.log("Bad request")
-                bot.sendMessage(msg.chat.id, error['response']['data']['message'])
-            }
-        }
+        await bot.sendMessage(msg.chat.id, 'Now borrowing USDC for ETH on Aave...');
+
+        // !!! issue is with here - cannot * 1500 bigints and numbers - also have to figure out better way to do this
+        currentRecursiveLeverageRatio = Math.pow(_leverageRatio, i + 1)
+
+        console.log(ethAmount)
+
+        const aaveUSDC = Math.round(Number(ethers.formatEther(ethAmount)) * 1500 * currentRecursiveLeverageRatio * 1e6)
+        const usdcAave = await borrowUSDCWithETHOnAAVE(ethAmount, aaveUSDC)
+
+        await bot.sendMessage(msg.chat.id, `Successfully borrowed ${usdcAave} USDC for ETH on Aave...`);
+
+        totalLevrageRatio += currentRecursiveLeverageRatio
+        console.log(totalLevrageRatio)
+        await bot.sendMessage(msg.chat.id, 'Your currenct leverage ratio is: ' + totalLevrageRatio.toFixed(2) + 'x');
     }
-    bot.sendMessage(msg.chat.id, 'Finished opening limited position');
 
+    bot.sendMessage(msg.chat.id, 'Finish opening limited position');
 });
+
+bot.onText(/\/uniswap_open_position/, async function onOpenPosition(msg) {
+    console.log(msg.text)
+    const params = msg.text?.split(' ')
+    let usdcAmount = params?.[1]
+    let recursiveTime = params?.[2]
+    let leverageRatio = params?.[3]
+    if (!usdcAmount || !recursiveTime || !leverageRatio) {
+        bot.sendMessage(msg.chat.id, "Please enter the correct params {usdcamount} {recursiveTimes} {leverageRatio}");
+        return
+    }
+    bot.sendMessage(msg.chat.id, 'Opening position...');
+    // console.log(usdcAmount);
+    let _usdcAmount = Number(usdcAmount) * 1e6 // convert to 6decimals
+    let _recursiveTime = Number(recursiveTime)
+    let _leverageRatio = Number(leverageRatio)
+    let currentRecursiveLeverageRatio = 0
+    let totalLevrageRatio = 1
+    // run fusion to convert usd to eth
+    await bot.sendMessage(msg.chat.id, 'Approving USDC for Selling with UniswapV3...');
+
+    //need conversion for decimal
+    const usdcBalance = await getUsdcBalance();
+    // console.log(ethers.formatUnits(usdcBalance, 6))
+    await approveUSDC(usdcBalance, _usdcAmount)
+    for (let i = 0; i < _recursiveTime; i++) {
+
+        await bot.sendMessage(msg.chat.id, 'Swapping USDC for ETH with UniswapV3... \nPlease wait while your order is filled');
+        // console.log(_usdcAmount.toString(), usdcBalance)
+        const ethAmount = await tradeUSDCForETH(_usdcAmount)
+        console.log('ethAmount: ', ethAmount)
+        await bot.sendMessage(msg.chat.id, `Successsfully swapped ${ethers.formatUnits(_usdcAmount, 6)} USDC for ${ethers.formatEther(ethAmount)} ETH...`);
+
+        await bot.sendMessage(msg.chat.id, 'Now borrowing USDC for ETH on Aave...');
+
+        // !!! issue is with here - cannot * 1500 bigints and numbers - also have to figure out better way to do this
+        currentRecursiveLeverageRatio = Math.pow(_leverageRatio, i + 1)
+
+        await sleep(5000);
+
+        const aaveUSDC = Math.round(Number(ethers.formatEther(ethAmount)) * 1500 * currentRecursiveLeverageRatio * 1e6)
+        const usdcAave = await borrowUSDCWithETHOnAAVE(ethAmount, aaveUSDC)        // console.log(aaveUSDC)
+
+        await bot.sendMessage(msg.chat.id, `Successfully borrowed ${usdcAave} USDC for ETH on Aave...`);
+
+        totalLevrageRatio += currentRecursiveLeverageRatio
+        console.log(totalLevrageRatio)
+        await bot.sendMessage(msg.chat.id, 'Your currenct leverage ratio is: ' + totalLevrageRatio.toFixed(2) + 'x');
+    }
+
+    bot.sendMessage(msg.chat.id, 'Finish opening limited position');
+});
+
